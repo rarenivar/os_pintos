@@ -11,6 +11,7 @@
 #include "devices/timer.h"
 
 static void test_sleep (int thread_cnt, int iterations);
+static void printHello();
 
 void
 test_alarm_single (void) 
@@ -22,6 +23,19 @@ void
 test_alarm_multiple (void) 
 {
   test_sleep (5, 7);
+}
+
+void
+test_ramiro (void)
+{
+  //test_sleep (80, 7);
+    printHello();
+}
+
+static void
+printHello()
+{
+    msg("hello bitches!");
 }
 
 /* Information about the test. */

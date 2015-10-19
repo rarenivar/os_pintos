@@ -198,6 +198,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/tests/threads/priority-fifo.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/tests/threads/priority-preempt.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/tests/threads/priority-sema.c" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/tests/threads/producer-consumer.c" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/tests/threads/producer-consumer.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/tests/threads/tests.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/tests/threads/tests.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/tests/userprog/args.c" isTestSource="false" />
@@ -321,6 +323,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/threads/malloc.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/threads/palloc.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/threads/palloc.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/threads/producer-consumer.c" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/threads/producer-consumer.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/threads/pte.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/threads/switch.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/threads/synch.c" isTestSource="false" />

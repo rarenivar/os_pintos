@@ -345,6 +345,6 @@ set(SOURCE_FILES
     src/Makefile
     src/Makefile.build
     src/Makefile.kernel
-    src/Makefile.userprog)
+    src/Makefile.userprog src/threads/producer-consumer.c src/threads/producer-consumer.h src/tests/threads/producer-consumer.c src/tests/threads/producer-consumer.h)
 
-add_executable(pintos ${SOURCE_FILES})
+add_executable(pintos ${SOURCE_FILES} src/threads/producer-consumer.c src/threads/producer-consumer.h src/tests/threads/producer-consumer.c src/tests/threads/producer-consumer.h)
