@@ -1,124 +1,201 @@
-//
-// Created by arenivar on 10/18/15.
-//
-
-//#include "producer-consumer.h"
+/*
+ * Tests producer/consumer communication with different numbers of threads.
+ * Automatic checks only catch severe problems like crashes.
+ */
 
 #include <stdio.h>
+#include "tests/threads/tests.h"
 #include "threads/malloc.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "lib/kernel/list.h"
+#include "devices/timer.h"
 
-/* Source String:
- * A producer gets a charater from the source string then puts the
- * character into the buffer */
-char src[] = "HELLO WORLD";
+#define TEXT "Hello world"
+#define SIZE 11 /* word count without NULL */
 
-/* The size of the source string */
-#define SRC_LEN 12
-
-/* The size of the buffer */
-#define BUF_SIZE 10
-
-char buf[BUF_SIZE];
-
-/* Number of characters in the buffer. Range is [0, BUF_SIZ] */
-unsigned int buf_n = 0;
-unsigned int head = 0; // Index of next char for the producer to write
-unsigned int tail = 0; // Index of next char for the consumer to get
-
-/* Total characters produced by all producers. Updated as producers
- * produce chars and decremented as consumers consume. If consumers
- * wait and this value is 0, then it means no character is left to be
- * consumed. When this happens, the consumers return */
-unsigned int total_char = 0;
-
-struct lock buf_lock; // monitor lock on the buffer
-struct lock total_char_lock; // lock on the total_char variable
-struct condition not_empty; // Signaled when the buffer is not empty
-struct condition not_full; // Signaled when the buffer is not full
-
-void initialize(void);
-void producer(void *aux);
-void consumer(void *aux);
+void init_producer_consumer(void);
 void producer_consumer(unsigned int num_producer, unsigned int num_consumer);
+void producer(void *aux UNUSED);
+void consumer(void *aux UNUSED);
 
-/* Creates producers and consumers threads */
-void producer_consumer(unsigned int num_producer, unsigned int num_consumer)
+/* buffer variables */
+static char text[] = TEXT;
+
+/* the bounded buffer */
+static char buffer[SIZE];
+
+/* buffer positions */
+static int head = 0;
+static int tail = 0;
+static int wrap = 0;
+
+/* locks */
+static struct lock mutex;
+
+/* condition */
+static struct condition not_full;
+static struct condition not_empty;
+
+/*
+ * The test method
+ */
+void
+test_producer_consumer(void)
 {
-    initialize();
-    lock_acquire(&total_char_lock);
-    total_char += num_producer * SRC_LEN; // updates the total produced chars.
-    lock_release(&total_char_lock);
+    /* initialize the scenario */
+    init_producer_consumer();
+
+    /* generate producers & consumers */
+    producer_consumer(0, 0);
+    producer_consumer(1, 0);
+    producer_consumer(0, 1);
+    producer_consumer(1, 1);
+    producer_consumer(3, 1);
+    producer_consumer(1, 3);
+    producer_consumer(4, 4);
+    producer_consumer(7, 2);
+    producer_consumer(2, 7);
+    producer_consumer(6, 6);
+
+    /* 'think we've passed */
+    pass();
+}
+
+/*
+ *  Initializes the producer and consumer
+ *  monitor variables
+ */
+void
+init_producer_consumer(void) {
+
+    /* monitor lock */
+    lock_init(&mutex);
+
+    /* buffer conditions */
+    cond_init(&not_empty);
+    cond_init(&not_full);
+}
+
+/*
+ * Creates num_producer producer and num_consumer consumer threads
+ */
+void
+producer_consumer(unsigned int num_producer, unsigned int num_consumer)
+{
+    /* loop variables */
     unsigned int i;
-    for(i = 0; i < num_producer; i++)
-    {
-        thread_create ("Producer", PRI_DEFAULT, producer, 0);
-    }
+
+    /* create consumer */
     for(i = 0; i < num_consumer; i++)
     {
-        thread_create("Consumer", PRI_DEFAULT, consumer, 0);
+        thread_create ("consumer", 1, consumer, &mutex);
+    }
+
+    /* create producer */
+    for(i = 0; i < num_producer; i++)
+    {
+        thread_create ("producer", 1, producer, &mutex);
     }
 }
 
-/* Initializes all locks and conditions */
-void initialize(void)
-{
-    lock_init(&buf_lock);
-    cond_init(&not_full);
-    cond_init(&not_empty);
-    lock_init(&total_char_lock);
-}
 
-/* Reads a charater from the source string and writes it into the buffer
- * It terminates when it reaches the end of the source string */
-void producer(void *aux)
-{
-    /* The index of the next character to be consumed by this producer */
-    unsigned int next = 0;
+/*
+ * Consumes all characters placed in the buffer
+ * buffer, and waits if there is nothing more to consumer.
+ */
+void
+consumer(void *aux UNUSED){
+    char c;
+
+    /* as long as there are characters in the buffer */
     while(true)
     {
-        /* returns if the producer has read all strings */
-        if (next >= SRC_LEN)
-            return;
-        lock_acquire(&buf_lock);
-        while(buf_n == BUF_SIZE)
-            cond_wait(&not_empty, &buf_lock);
-        buf[head] = src[next];
-        next++;
-        buf_n++;
-        head = (head + 1) % BUF_SIZE;
-        cond_signal(&not_full, &buf_lock);
-        lock_release(&buf_lock);
-    }
-}
+        /* enter critical section */
+        lock_acquire(&mutex);
 
-/* Consumes a character from the shared buffer and prints it.
- * It termintates if the all produced characters have been consumed*/
-void consumer(void *aux)
-{
-    while(true)
-    {
-        lock_acquire(&total_char_lock);
-        lock_acquire(&buf_lock);
-
-        /* Checks if there are still available produced characters
-         * Release locks and return if there is no character left
-         * to consume */
-        if(total_char == 0)
+        /* check if there is a character left in the buffer */
+        while (head == tail && wrap == 0)
         {
-            lock_release(&total_char_lock);
-            lock_release(&buf_lock);
-            return;
+            /* if no character is left, inform the producer threads
+             to get work done and wait until a character has been placed */
+            cond_broadcast(&not_full, &mutex);
+            cond_wait(&not_empty, &mutex);
         }
-        while(buf_n == 0)
-            cond_wait(&not_full, &buf_lock);
-        printf("%c", buf[tail]);
-        buf_n--;
-        total_char--;
-        tail = (tail + 1) % BUF_SIZE;
-        cond_signal(&not_empty, &buf_lock);
-        lock_release(&buf_lock);
-        lock_release(&total_char_lock);
+
+        /* take a character from the buffer */
+        c = buffer[tail];
+
+        /* update read pointer */
+        tail = (tail+1) % SIZE;
+
+        /* check if we have had a wrap-around */
+        if(tail == 0) {
+            wrap--;
+        }
+
+        /* check that there isn't more than a single wrap-around
+         of the head pointer */
+        ASSERT(wrap == 0 || wrap == 1)
+
+        /* inform the producer threads that the buffer is not full (anymore) */
+        cond_broadcast(&not_full, &mutex);
+
+        /* leave the critical section */
+        lock_release(&mutex);
     }
-}
+};
+
+/*
+ * Produces characters based on the string text
+ * and puts them into the buffer buffer.
+ *
+ * Terminates when all characters have been placed in the buffer.
+ */
+void
+producer(void *aux UNUSED){
+    /* local variables */
+    int position = 0;
+    char c;
+
+    /* as long as we have characters to produce */
+    while(text[position] != '\0'){
+
+        /* enter critical section */
+        lock_acquire(&mutex);
+
+        /* check if buffer is full */
+        while (head == tail && wrap == 1)
+        {
+            /* state that the buffer is not empty and wait
+              for consumer to free a slot of the buffer */
+            cond_broadcast(&not_empty, &mutex);
+            cond_wait(&not_full, &mutex);
+        }
+
+        /* fetch the next character from the text
+         and save it to the buffer */
+        c = text[position];
+        buffer[head] = c;
+
+        /* update the writer & reader positions */
+        head = (head + 1) % SIZE;
+        position++;
+
+        /* check if we have a wrap-around */
+        if(head == 0) {
+            wrap++;
+        }
+
+        /* assert that the head can only be one
+         wrap-around in front of tail */
+        ASSERT(wrap == 0 || wrap == 1)
+
+        /* wake up consumers, state that the buffer is not
+         empty any more */
+        cond_broadcast(&not_empty, &mutex);
+
+        /* leave critical section */
+        lock_release(&mutex);
+    }
+};
