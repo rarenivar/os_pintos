@@ -9,8 +9,8 @@
 #define DATASIZE 5
 
 // condition variables structs, defined in synch.h
-static struct condition notFull;
-static struct condition notEmpty;
+static struct condition bufferNotFull;
+static struct condition bufferNotEmpty;
 // for the buffer
 static char buffer[DATASIZE];
 // data buffer
@@ -31,8 +31,8 @@ void test_producer_consumer(void) {
 
     // initializing lock and conditions
     lock_init(&mutex);
-    cond_init(&notEmpty);
-    cond_init(&notFull);
+    cond_init(&bufferNotEmpty);
+    cond_init(&bufferNotFull);
 
     //GenerateProducerConsumer(2, 7);
     GenerateProducerConsumer(2, 2);
@@ -58,18 +58,18 @@ void GenerateProducerConsumer(int numberOfProducers, int numberOfConsumers) {
 // Function that creates consumer threads
 void Consumer_func(void *aux UNUSED) {
     char character;
-    while(true) {
+    for(;;) {
         // acquire lock
         lock_acquire(&mutex);
-        msg("---------------------------------");
-        msg("Consumer ID %i acquired lock", thread_tid());
+        msg("\n---------------------------------");
+        msg("Consumer ID %i acquired lock, tail %d, wrap %d", thread_tid(), tail, wrap);
         // make sure there is data in the buffer
         while (head == tail && wrap == 0)
         {
             msg("Consumer ID %i, broadcasting there is no data!", thread_tid());
             // wakes up all threads
-            cond_broadcast(&notFull, &mutex);
-            cond_wait(&notEmpty, &mutex);
+            cond_broadcast(&bufferNotFull, &mutex);
+            cond_wait(&bufferNotEmpty, &mutex);
         }
         // grab data from the buffer and update tail pointer
         character = buffer[tail];
@@ -79,7 +79,8 @@ void Consumer_func(void *aux UNUSED) {
         }
         msg("Consumer grabbed: %c", character);
         // broadcast that the buffer is not full and release lock
-        cond_broadcast(&notFull, &mutex);
+        cond_broadcast(&bufferNotFull, &mutex);
+        msg("About to release lock, tail %d, wrap %d", tail, wrap);
         lock_release(&mutex);
         msg("Consumer ID %i released lock", thread_tid());
         msg("----------------------------");
@@ -96,15 +97,15 @@ Producer_func(void *aux UNUSED) {
 
         // acquire lock
         lock_acquire(&mutex);
-        msg("*********************************");
-        msg("Producer ID %i acquired lock", thread_tid());
+        msg("\n*********************************");
+        msg("Producer ID %i acquired lock, index %d, head %d, wrap %d", thread_tid(), index, head, wrap);
         // broadcast if the buffer is not empty
         // so the consumer can take an item
         while (head == tail && wrap == 1)
         {
             msg("Producer ID %i, broadcasting...buffer is not empty", thread_tid());
-            cond_broadcast(&notEmpty, &mutex);
-            cond_wait(&notFull, &mutex);
+            cond_broadcast(&bufferNotEmpty, &mutex);
+            cond_wait(&bufferNotFull, &mutex);
         }
         // save the data to the buffer
         character =  consumerData[index];
@@ -118,8 +119,9 @@ Producer_func(void *aux UNUSED) {
             wrap += 1;
         }
         // need to broadcast that the buffer is not empty
-        cond_broadcast(&notEmpty, &mutex);
+        cond_broadcast(&bufferNotEmpty, &mutex);
         // release the lock
+        msg("About to release lock, index %d, head %d, wrap %d", index, head, wrap);
         lock_release(&mutex);
         msg("Producer ID %i released lock", thread_tid());
         msg("****************************");
