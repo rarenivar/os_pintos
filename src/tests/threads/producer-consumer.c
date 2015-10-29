@@ -67,7 +67,7 @@ void Consumer_func(void *aux UNUSED) {
         while (head == tail && wrap == 0)
         {
             msg("Consumer ID %i, broadcasting there is no data!", thread_tid());
-            // wakes up all threads
+            // wakes up all threadsbuth
             cond_broadcast(&bufferNotFull, &mutex);
             cond_wait(&bufferNotEmpty, &mutex);
         }
@@ -82,7 +82,6 @@ void Consumer_func(void *aux UNUSED) {
         cond_broadcast(&bufferNotFull, &mutex);
         msg("About to release lock, tail %d, wrap %d", tail, wrap);
         lock_release(&mutex);
-        msg("Consumer ID %i released lock", thread_tid());
         msg("----------------------------");
     }
 };
@@ -123,7 +122,6 @@ Producer_func(void *aux UNUSED) {
         // release the lock
         msg("About to release lock, index %d, head %d, wrap %d", index, head, wrap);
         lock_release(&mutex);
-        msg("Producer ID %i released lock", thread_tid());
         msg("****************************");
     }
 };
