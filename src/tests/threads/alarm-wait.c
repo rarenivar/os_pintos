@@ -28,14 +28,13 @@ test_alarm_multiple (void)
 void
 test_ramiro (void)
 {
-  //test_sleep (80, 7);
     printHello();
 }
 
 static void
 printHello()
 {
-    msg("hello bitches!");
+    msg("Hello World!");
 }
 
 /* Information about the test. */
