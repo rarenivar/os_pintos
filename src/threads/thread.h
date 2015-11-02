@@ -7,12 +7,12 @@
 
 /* States in a thread's life cycle. */
 enum thread_status
-  {
+{
     THREAD_RUNNING,     /* Running thread. */
-    THREAD_READY,       /* Not running but ready to run. */
-    THREAD_BLOCKED,     /* Waiting for an event to trigger. */
-    THREAD_DYING        /* About to be destroyed. */
-  };
+            THREAD_READY,       /* Not running but ready to run. */
+            THREAD_BLOCKED,     /* Waiting for an event to trigger. */
+            THREAD_DYING        /* About to be destroyed. */
+};
 
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
@@ -81,7 +81,7 @@ typedef int tid_t;
    ready state is on the run queue, whereas only a thread in the
    blocked state is on a semaphore wait list. */
 struct thread
-  {
+{
     /* Owned by thread.c. */
     tid_t tid;                          /* Thread identifier. */
     enum thread_status status;          /* Thread state. */
@@ -89,6 +89,15 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
+
+    /* MJA */
+    long long startTick; /* Tick when thread is created. */
+    long long firstTimeSlice; /* Tick of first time slice. */
+    long long createTicks; /* Ticks needed to start thread. */
+    long long tickOfLastExecution; /* Last tick before context switch */
+    long long numberTimeSlices; /* Number of time slices this thread received */
+    long long ticksBetweenExecution; /* Ticks between runs of this thread. */
+    /* MJA end*/
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -100,7 +109,7 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
-  };
+};
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -112,6 +121,10 @@ void thread_start (void);
 
 void thread_tick (void);
 void thread_print_stats (void);
+/* MJA */
+void thread_print_metrics(void);
+void thread_print_global_metrics(void);
+/* MJA end */
 
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
@@ -124,11 +137,11 @@ tid_t thread_tid (void);
 const char *thread_name (void);
 
 void thread_exit (void) NO_RETURN;
-void thread_yield (void);
+                        void thread_yield (void);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
-typedef void thread_action_func (struct thread *t, void *aux);
-void thread_foreach (thread_action_func *, void *);
+                        typedef void thread_action_func (struct thread *t, void *aux);
+                        void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);

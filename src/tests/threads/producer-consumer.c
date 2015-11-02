@@ -58,13 +58,21 @@ void test_producer_consumer(void) {
     {
         thread_create("Consumer", PRIORITY, Consumer_func, &theLock);
     }
+
+    thread_print_global_metrics();
 }
 
 
 // Function that creates consumer threads
 void Consumer_func(void *aux) {
     while(true) {
+
         lock_acquire(&theLock);
+
+        if (totalSum == 215) {
+            thread_exit();
+        }
+
         msg("Consumer ID: %i acquired lock, tail %d, isBufferFull %d", thread_tid(), tail, isBufferFull);
         while (head == tail && isBufferFull == 0)
         {
@@ -80,6 +88,7 @@ void Consumer_func(void *aux) {
         }
         msg("Consumer %i grabbed: %d, Sum = %d", thread_tid(), consumer_digit, totalSum);
         cond_broadcast(&shareBufferNotFull, &theLock);
+        thread_print_metrics();
         lock_release(&theLock);
     }
 };
@@ -88,7 +97,11 @@ void Consumer_func(void *aux) {
 void Producer_func(void *aux) {
     int producer_order = 0;
     while( consumerData[producer_order] != '\0'){
+
         lock_acquire(&theLock);
+        if (totalSum == 215) {
+            thread_exit();
+        }
         if (producer_order == 0) {
             msg("Producer ID %i was the %i producer to start", thread_tid(), theOrder);
             producer_order = theOrder;
@@ -112,6 +125,7 @@ void Producer_func(void *aux) {
             }
         }
         cond_broadcast(&shareBufferNotEmpty, &theLock);
+        thread_print_metrics();
         lock_release(&theLock);
     }
 };
