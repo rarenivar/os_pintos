@@ -5,11 +5,11 @@
 #include "threads/synch.h"
 #include "tests/threads/tests.h"
 
-#define PRIORITY 1
-#define NUMPRODUCERS 5
-#define NUMCONSUMERS 5
+#define PRIORITY 0
+#define NUMPRODUCERS 10
+#define NUMCONSUMERS 10
 #define DATASIZE 5
-#define PRODUCERDATASIZE 45
+#define PRODUCERDATASIZE 265
 
 // condition variables structs, define in synch.h
 static struct condition shareBufferNotFull;
@@ -20,17 +20,25 @@ static int consumer_digit = 0;
 static int producer_digit = 0;
 
 static int consumerData[PRODUCERDATASIZE] = {
-        9,2,9,1,
-        2,3,6,9,
-        1,2,6,9,
-        3,1,5,4,
-        4,9,4,5,
-        7,6,9,6,
-        7,7,3,1,
-        5,8,4,1,
-        7,9,5,3,
-        7,5,2,3,
-        2,2,9,3 }; //== 215
+                                                9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+                                                7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+                                                2,2,9,3,
+                                                9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+                                                7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+                                                2,2,9,3,
+                                                9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+                                                7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+                                                2,2,9,3,
+                                                9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+                                                7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+                                                2,2,9,3,
+                                                9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+                                                7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+                                                2,2,9,3,
+                                                9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+                                                7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+                                                2,2,9,3,
+                                            }; //== 1290
 
 static int headQueue = 0;
 static int tailQueue = 0;
@@ -52,11 +60,11 @@ void test_producer_consumer(void) {
     //we'll now create the threads for the producers and consumers
     for(i = 0; i < NUMPRODUCERS; i++)
     {
-        thread_create("Producer", PRIORITY, Producer_func, &theLock);
+        thread_create("Producer", PRI_DEFAULT, Producer_func, &theLock);
     }
     for(i = 0; i < NUMCONSUMERS; i++)
     {
-        thread_create("Consumer", PRIORITY, Consumer_func, &theLock);
+        thread_create("Consumer", PRI_DEFAULT, Consumer_func, &theLock);
     }
 
     thread_print_global_metrics();
@@ -69,11 +77,13 @@ void Consumer_func(void *aux) {
 
         lock_acquire(&theLock);
 
-        if (totalSum == 215) {
+        if (totalSum == 1290) {
+            msg("from consumer");
+            thread_print_global_metrics();
             thread_exit();
         }
 
-        msg("Consumer ID: %i acquired lock, tailQueue %d, resetBufferCurrentIndex %d", thread_tid(), tailQueue, resetBufferCurrentIndex);
+        //msg("Consumer ID: %i acquired lock, tailQueue %d, resetBufferCurrentIndex %d", thread_tid(), tailQueue, resetBufferCurrentIndex);
         while (headQueue == tailQueue && resetBufferCurrentIndex == 0)
         {
             //msg("Consumer %i, butter is empty", thread_tid());
@@ -97,18 +107,19 @@ void Producer_func(void *aux) {
     while( consumerData[producer_order] != '\0'){
 
         lock_acquire(&theLock);
-        if (totalSum == 215) {
+        if (totalSum == 1290) {
+            msg("from producer");
             thread_exit();
         }
 
         if (producer_order == 0) {
-            msg("Producer ID %i was the %i producer to start", thread_tid(), theOrder);
+            //msg("Producer ID %i was the %i producer to start", thread_tid(), theOrder);
             producer_order = theOrder;
             theOrder++;
         }
         while (headQueue == tailQueue && resetBufferCurrentIndex == 1)
         {
-            msg("Producer ID %i, broadcasting shareBuffer is not empty...", thread_tid());
+            //msg("Producer ID %i, broadcasting shareBuffer is not empty...", thread_tid());
             cond_broadcast(&shareBufferNotEmpty, &theLock);
             cond_wait(&shareBufferNotFull, &theLock);
         }
@@ -117,7 +128,7 @@ void Producer_func(void *aux) {
             shareBuffer[headQueue] = producer_digit;
             //msg("It produced %i at the shareBuffer index of %i", producer_digit, headQueue);
             headQueue = (headQueue + 1) % DATASIZE;
-            //msg("Producer ID %i has producer_order index of %i", thread_tid(), producer_order);
+            msg("Producer ID %i has producer_order index of %i", thread_tid(), producer_order);
             producer_order = producer_order + NUMPRODUCERS;
             if (headQueue == 0) { resetBufferCurrentIndex = 1; }
         }
