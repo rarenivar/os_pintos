@@ -11,9 +11,13 @@
  * and when it's full, the consumers take data from it).
  */
 
+#include <stdio.h>
 #include "threads/thread.h"
 #include "threads/synch.h"
 #include "tests/threads/tests.h"
+#include "threads/init.h"
+#include "threads/malloc.h"
+#include "devices/timer.h"
 
 #define NUMPRODUCERS 10
 #define NUMCONSUMERS 10
