@@ -19,7 +19,7 @@
 #include "threads/malloc.h"
 #include "devices/timer.h"
 
-#define NUMPRODUCERS 10
+#define NUMPRODUCERS 5
 #define NUMCONSUMERS 10
 #define DATASIZE 5
 #define PRODUCERDATASIZE 265
@@ -30,8 +30,8 @@ static struct condition shareBufferNotFull;
 static struct condition shareBufferNotEmpty;
 static int shareBuffer[DATASIZE];
 static int resetBufferCurrentIndex = 0;
-static int consumer_digit = 0;
-static int producer_digit = 0;
+static int inProgress = 1;
+static int numberOfThreadsFinished = 0;
 
 static int consumerData[PRODUCERDATASIZE] = {
     9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
@@ -79,25 +79,27 @@ void test_producer_consumer(void) {
     {
         thread_create("Consumer", PRI_DEFAULT, Consumer_func, &theLock);
     }
-    thread_print_global_metrics();
 }
 
 
 // Function that creates consumer threads
 void Consumer_func(void *aux) {
+    int consumer_digit = 0;
     msg("Consumer %i started", thread_tid());
-    while(true) {
+    while(inProgress) {
 
         lock_acquire(&theLock);
 
         // once we know the sum is what we expect, print the global metrics
         if (totalSum == 1290) {
+            inProgress = 0;
             msg("Correct addition of consumer data! totalSum = 1290");
         }
 
         // if the share buffer is not full...
-        while (headQueue == tailQueue && resetBufferCurrentIndex == 0 || totalSum == 1290)
+        while (headQueue == tailQueue && resetBufferCurrentIndex == 0/* || totalSum == 1290*/)
         {
+            if (totalSum == 1290 || inProgress == 0) { break; }
             cond_broadcast(&shareBufferNotFull, &theLock);
             cond_wait(&shareBufferNotEmpty, &theLock);
         }
@@ -109,15 +111,21 @@ void Consumer_func(void *aux) {
         cond_broadcast(&shareBufferNotFull, &theLock);
         lock_release(&theLock);
     }
+    msg("Consumer %i thread thread terminating", thread_tid());
+    numberOfThreadsFinished++;
     thread_print_metrics();
+    if (numberOfThreadsFinished == (NUMCONSUMERS + NUMPRODUCERS)) {
+        thread_print_global_metrics();
+    }
 };
 
 // Function that creates consumer threads
 void Producer_func(void *aux) {
+    int producer_digit = 0;
     msg("Producer %i started", thread_tid());
     int producer_order = 0;
 
-    while( consumerData[producer_order] != '\0'){
+    while( producer_order < (PRODUCERDATASIZE-1)){
 
         lock_acquire(&theLock);
 
@@ -143,5 +151,10 @@ void Producer_func(void *aux) {
         cond_broadcast(&shareBufferNotEmpty, &theLock);
         lock_release(&theLock);
     }
+    msg("Producer %i thread terminating", thread_tid());
+    numberOfThreadsFinished++;
     thread_print_metrics();
+    if (numberOfThreadsFinished == (NUMCONSUMERS + NUMPRODUCERS)) {
+        thread_print_global_metrics();
+    }
 };
