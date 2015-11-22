@@ -19,7 +19,7 @@
 #include "threads/malloc.h"
 #include "devices/timer.h"
 
-#define NUMPRODUCERS 5
+#define NUMPRODUCERS 1
 #define NUMCONSUMERS 10
 #define DATASIZE 5
 #define PRODUCERDATASIZE 530
@@ -87,11 +87,11 @@ void test_producer_consumer(void) {
     // creating the producers and consumers
     for(i = 0; i < NUMPRODUCERS; i++)
     {
-        thread_create("Producer", PRI_DEFAULT, Producer_func, &theLock);
+        thread_create("Producer", 1, Producer_func, &theLock);
     }
     for(i = 0; i < NUMCONSUMERS; i++)
     {
-        thread_create("Consumer", PRI_DEFAULT, Consumer_func, &theLock);
+        thread_create("Consumer", 62, Consumer_func, &theLock);
     }
 }
 
@@ -113,6 +113,7 @@ void Consumer_func(void *aux) {
         // if the share buffer is not full...
         while (headQueue == tailQueue && resetBufferCurrentIndex == 0/* || totalSum == 2580*/)
         {
+            //msg("waiting for the producer");
             if (totalSum == 2580 || inProgress == 0) { break; }
             cond_broadcast(&shareBufferNotFull, &theLock);
             cond_wait(&shareBufferNotEmpty, &theLock);

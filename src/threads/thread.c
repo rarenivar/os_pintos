@@ -19,6 +19,7 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
+#define ENABLEPRIORITY 1 // 0 = false, 1 (or # != 0) = true
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -317,6 +318,7 @@ thread_unblock (struct thread *t)
     old_level = intr_disable ();
     ASSERT (t->status == THREAD_BLOCKED);
     list_push_back (&ready_list, &t->elem);
+
     t->status = THREAD_READY;
     intr_set_level (old_level);
 }
@@ -397,8 +399,9 @@ thread_yield (void)
     /* MJA end */
 
     old_level = intr_disable ();
-    if (cur != idle_thread)
+    if (cur != idle_thread) {
         list_push_back (&ready_list, &cur->elem);
+    }
     cur->status = THREAD_READY;
     schedule ();
     intr_set_level (old_level);
@@ -593,8 +596,22 @@ next_thread_to_run (void)
     if (list_empty (&ready_list))
         return idle_thread;
     else
+        // ramiro
+        if (ENABLEPRIORITY) {
+            list_sort(&ready_list, (list_less_func *) &order_list_by_priority, NULL);
+        }
+        // end ramiro
         return list_entry (list_pop_front (&ready_list), struct thread, elem);
 }
+
+// ramiro
+bool order_list_by_priority(struct list_elem *firstElement, struct list_elem *secondElement) {
+    struct thread *firstThread = list_entry(firstElement, struct thread, elem);
+    struct thread *secondThread = list_entry(secondElement, struct thread, elem);
+    if (firstThread->priority > secondThread->priority) { return true; }
+    else { return false; }
+}
+// end ramiro
 
 /* Completes a thread switch by activating the new thread's page
    tables, and, if the previous thread is dying, destroying it.
