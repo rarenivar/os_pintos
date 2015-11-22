@@ -22,7 +22,7 @@
 #define NUMPRODUCERS 5
 #define NUMCONSUMERS 10
 #define DATASIZE 5
-#define PRODUCERDATASIZE 265
+#define PRODUCERDATASIZE 530
 #define DEBUG 0 // true = 1, false = 0
 
 // condition variables structs, define in synch.h
@@ -48,7 +48,21 @@ static int consumerData[PRODUCERDATASIZE] = {
     9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
     7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
     2,2,9,3,
-}; // The addition of all of these number is 1290
+    9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+    7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+    2,2,9,3,9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,
+    4,9,4,5,7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,
+    7,5,2,3,2,2,9,3,9,2,9,1,2,3,6,9,1,2,6,9,
+    3,1,5,4,4,9,4,5,7,6,9,6,7,7,3,1,5,8,4,1,
+    7,9,5,3,7,5,2,3,2,2,9,3,9,2,9,1,2,3,6,9,
+    1,2,6,9,3,1,5,4,4,9,4,5,7,6,9,6,7,7,3,1,
+    5,8,4,1,7,9,5,3,7,5,2,3,2,2,9,3,9,2,9,1,
+    2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,7,6,9,6,
+    7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,2,2,9,3,
+    9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+    7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+    2,2,9,3
+}; // The addition of all of these number is 2580
 
 // pointers for arrays and the lock variable
 static int headQueue = 0;
@@ -91,15 +105,15 @@ void Consumer_func(void *aux) {
         lock_acquire(&theLock);
 
         // once we know the sum is what we expect, print the global metrics
-        if (totalSum == 1290) {
+        if (totalSum == 2580) {
             inProgress = 0;
-            msg("Correct addition of consumer data! totalSum = 1290");
+            msg("Correct addition of consumer data! totalSum = 2580");
         }
 
         // if the share buffer is not full...
-        while (headQueue == tailQueue && resetBufferCurrentIndex == 0/* || totalSum == 1290*/)
+        while (headQueue == tailQueue && resetBufferCurrentIndex == 0/* || totalSum == 2580*/)
         {
-            if (totalSum == 1290 || inProgress == 0) { break; }
+            if (totalSum == 2580 || inProgress == 0) { break; }
             cond_broadcast(&shareBufferNotFull, &theLock);
             cond_wait(&shareBufferNotEmpty, &theLock);
         }
