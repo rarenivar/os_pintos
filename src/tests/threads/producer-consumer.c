@@ -22,7 +22,7 @@
 #define NUMPRODUCERS 1
 #define NUMCONSUMERS 10
 #define DATASIZE 5
-#define PRODUCERDATASIZE 530
+#define PRODUCERDATASIZE 1060
 #define DEBUG 0 // true = 1, false = 0
 
 // condition variables structs, define in synch.h
@@ -61,8 +61,36 @@ static int consumerData[PRODUCERDATASIZE] = {
     7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,2,2,9,3,
     9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
     7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+    2,2,9,3,
+    9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+    7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+    2,2,9,3,9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,
+    4,9,4,5,7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,
+    7,5,2,3,2,2,9,3,9,2,9,1,2,3,6,9,1,2,6,9,
+    3,1,5,4,4,9,4,5,7,6,9,6,7,7,3,1,5,8,4,1,
+    7,9,5,3,7,5,2,3,2,2,9,3,9,2,9,1,2,3,6,9,
+    1,2,6,9,3,1,5,4,4,9,4,5,7,6,9,6,7,7,3,1,
+    5,8,4,1,7,9,5,3,7,5,2,3,2,2,9,3,9,2,9,1,
+    2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,7,6,9,6,
+    7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,2,2,9,3,
+    9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+    7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+    2,2,9,3,
+    9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+    7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
+    2,2,9,3,9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,
+    4,9,4,5,7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,
+    7,5,2,3,2,2,9,3,9,2,9,1,2,3,6,9,1,2,6,9,
+    3,1,5,4,4,9,4,5,7,6,9,6,7,7,3,1,5,8,4,1,
+    7,9,5,3,7,5,2,3,2,2,9,3,9,2,9,1,2,3,6,9,
+    1,2,6,9,3,1,5,4,4,9,4,5,7,6,9,6,7,7,3,1,
+    5,8,4,1,7,9,5,3,7,5,2,3,2,2,9,3,9,2,9,1,
+    2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,7,6,9,6,
+    7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,2,2,9,3,
+    9,2,9,1,2,3,6,9,1,2,6,9,3,1,5,4,4,9,4,5,
+    7,6,9,6,7,7,3,1,5,8,4,1,7,9,5,3,7,5,2,3,
     2,2,9,3
-}; // The addition of all of these number is 2580
+}; // The addition of all of these number is 5160
 
 // pointers for arrays and the lock variable
 static int headQueue = 0;
@@ -74,7 +102,7 @@ static int theOrder = 0;
 void Producer_func(void *aux);
 void Consumer_func(void *aux);
 
-// test method
+// This is the function that will be get called by Pintos
 void test_producer_consumer(void) {
 
     // initializing lock and conditions
@@ -84,7 +112,7 @@ void test_producer_consumer(void) {
 
     int i;
 
-    // creating the producers and consumers
+    // Here we'll create the diffetent producers and consumers
     for(i = 0; i < NUMPRODUCERS; i++)
     {
         thread_create("Producer", 1, Producer_func, &theLock);
@@ -104,17 +132,16 @@ void Consumer_func(void *aux) {
 
         lock_acquire(&theLock);
 
-        // once we know the sum is what we expect, print the global metrics
-        if (totalSum == 2580) {
+        // once we know the sum is what we expect, then set inProgress flag to 0
+        if (totalSum == 5160) {
             inProgress = 0;
-            msg("Correct addition of consumer data! totalSum = 2580");
+            msg("Correct addition of consumer data! totalSum = 5160");
         }
 
         // if the share buffer is not full...
-        while (headQueue == tailQueue && resetBufferCurrentIndex == 0/* || totalSum == 2580*/)
+        while (headQueue == tailQueue && resetBufferCurrentIndex == 0)
         {
-            //msg("waiting for the producer");
-            if (totalSum == 2580 || inProgress == 0) { break; }
+            if (totalSum == 5160 || inProgress == 0) { break; }
             cond_broadcast(&shareBufferNotFull, &theLock);
             cond_wait(&shareBufferNotEmpty, &theLock);
         }
@@ -127,8 +154,10 @@ void Consumer_func(void *aux) {
         lock_release(&theLock);
     }
     msg("Consumer %i thread thread terminating", thread_tid());
+    // Let's the program know how many threads have terminated
     numberOfThreadsFinished++;
     thread_print_metrics();
+    // If all of the threads have terminated, print the global metrics of the program
     if (numberOfThreadsFinished == (NUMCONSUMERS + NUMPRODUCERS)) {
         thread_print_global_metrics();
     }
@@ -143,7 +172,8 @@ void Producer_func(void *aux) {
     while( producer_order < (PRODUCERDATASIZE-1)){
 
         lock_acquire(&theLock);
-
+        // Increment theOrder variable, which stores the order
+        // that the producers begin executing
         if (producer_order == 0) {
             producer_order = theOrder;
             theOrder++;
@@ -167,8 +197,10 @@ void Producer_func(void *aux) {
         lock_release(&theLock);
     }
     msg("Producer %i thread terminating", thread_tid());
+    // Let's the program know how many threads have terminated
     numberOfThreadsFinished++;
     thread_print_metrics();
+    // If all of the threads have terminated, print the global metrics of the program
     if (numberOfThreadsFinished == (NUMCONSUMERS + NUMPRODUCERS)) {
         thread_print_global_metrics();
     }

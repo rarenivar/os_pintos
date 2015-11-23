@@ -19,7 +19,7 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
-#define ENABLEPRIORITY 1 // 0 = false, 1 (or # != 0) = true
+#define ENABLEPRIORITY 0 // 0 = false, 1 (or # != 0) = true
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -598,6 +598,9 @@ next_thread_to_run (void)
     else
         // ramiro
         if (ENABLEPRIORITY) {
+            // Using the list_sort functionality provided by pintos to sort the ready list.
+            // The second parameter is a function that will take two list_elem objects,
+            // which is implemented in this file
             list_sort(&ready_list, (list_less_func *) &order_list_by_priority, NULL);
         }
         // end ramiro
@@ -605,11 +608,17 @@ next_thread_to_run (void)
 }
 
 // ramiro
+// Function that is passed in the 'list_sort' function above, which takes two list_elems structs,
+// casts them as struct threads, then after double checking that they are in fact valid thread
+// pointers, sorts them based on the priority value that each of them hold.
 bool order_list_by_priority(struct list_elem *firstElement, struct list_elem *secondElement) {
     struct thread *firstThread = list_entry(firstElement, struct thread, elem);
     struct thread *secondThread = list_entry(secondElement, struct thread, elem);
-    if (firstThread->priority > secondThread->priority) { return true; }
-    else { return false; }
+    if (is_thread(firstThread) && is_thread(secondThread)) {
+        if (firstThread->priority > secondThread->priority) { return true; }
+        else { return false; }
+    }
+    else { PANIC ("Error in priority scheduling: pointer passed not a thread"); }
 }
 // end ramiro
 
