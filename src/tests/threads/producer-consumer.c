@@ -19,15 +19,15 @@
 #include "threads/malloc.h"
 #include "devices/timer.h"
 
-#define NUMPRODUCERS 1
+#define NUMPRODUCERS 2
 #define NUMCONSUMERS 10
 #define DATASIZE 5
 #define PRODUCERDATASIZE 1060
 #define DEBUG 0 // true = 1, false = 0
 
 // condition variables structs, define in synch.h
-static struct condition shareBufferNotFull;
-static struct condition shareBufferNotEmpty;
+static struct condition shareBufferEmpty;
+static struct condition shareBufferFull;
 static int shareBuffer[DATASIZE];
 static int resetBufferCurrentIndex = 0;
 static int inProgress = 1;
@@ -107,19 +107,25 @@ void test_producer_consumer(void) {
 
     // initializing lock and conditions
     lock_init(&theLock);
-    cond_init(&shareBufferNotEmpty);
-    cond_init(&shareBufferNotFull);
+
+    /*
+     * From Pintos website...
+     * Function: void cond_init (struct condition *cond)
+     * Initializes cond as a new condition variable.
+     * */
+    cond_init(&shareBufferFull);
+    cond_init(&shareBufferEmpty);
 
     int i;
 
-    // Here we'll create the diffetent producers and consumers
+    // Here we'll create the different producers and consumers
     for(i = 0; i < NUMPRODUCERS; i++)
     {
-        thread_create("Producer", 1, Producer_func, &theLock);
+        thread_create("Producer", 0, Producer_func, &theLock);
     }
     for(i = 0; i < NUMCONSUMERS; i++)
     {
-        thread_create("Consumer", 62, Consumer_func, &theLock);
+        thread_create("Consumer", 63, Consumer_func, &theLock);
     }
 }
 
@@ -142,15 +148,15 @@ void Consumer_func(void *aux) {
         while (headQueue == tailQueue && resetBufferCurrentIndex == 0)
         {
             if (totalSum == 5160 || inProgress == 0) { break; }
-            cond_broadcast(&shareBufferNotFull, &theLock);
-            cond_wait(&shareBufferNotEmpty, &theLock);
+            cond_broadcast(&shareBufferEmpty, &theLock);
+            cond_wait(&shareBufferFull, &theLock);
         }
         consumer_digit = shareBuffer[tailQueue];
         tailQueue = (tailQueue+1) % DATASIZE;
         totalSum += consumer_digit;
         if(tailQueue == 0) { resetBufferCurrentIndex = 0; }
         if (DEBUG) { msg("Consumer %i grabbed: %d, Sum = %d", thread_tid(), consumer_digit, totalSum); }
-        cond_broadcast(&shareBufferNotFull, &theLock);
+        cond_broadcast(&shareBufferEmpty, &theLock);
         lock_release(&theLock);
     }
     msg("Consumer %i thread thread terminating", thread_tid());
@@ -182,8 +188,8 @@ void Producer_func(void *aux) {
         //if the share buffer does not contain elements or it's been reset
         while (headQueue == tailQueue && resetBufferCurrentIndex == 1)
         {
-            cond_broadcast(&shareBufferNotEmpty, &theLock);
-            cond_wait(&shareBufferNotFull, &theLock);
+            cond_broadcast(&shareBufferFull, &theLock);
+            cond_wait(&shareBufferEmpty, &theLock);
         }
         if (producer_order < (PRODUCERDATASIZE - 1)) {
             producer_digit = consumerData[producer_order];
@@ -193,7 +199,7 @@ void Producer_func(void *aux) {
             producer_order = producer_order + NUMPRODUCERS;
             if (headQueue == 0) { resetBufferCurrentIndex = 1; }
         }
-        cond_broadcast(&shareBufferNotEmpty, &theLock);
+        cond_broadcast(&shareBufferFull, &theLock);
         lock_release(&theLock);
     }
     msg("Producer %i thread terminating", thread_tid());

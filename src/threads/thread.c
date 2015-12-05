@@ -19,7 +19,7 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
-#define ENABLEPRIORITY 0 // 0 = false, 1 (or # != 0) = true
+#define ENABLEPRIORITY 1 // 0 = false, 1 (or # != 0) = true
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -611,6 +611,10 @@ next_thread_to_run (void)
 // Function that is passed in the 'list_sort' function above, which takes two list_elems structs,
 // casts them as struct threads, then after double checking that they are in fact valid thread
 // pointers, sorts them based on the priority value that each of them hold.
+// From list.h comment code...
+// Compares the value of two list elements A and B, given
+// auxiliary data AUX.  Returns true if A is less than B, or
+// false if A is greater than or equal to B.
 bool order_list_by_priority(struct list_elem *firstElement, struct list_elem *secondElement) {
     struct thread *firstThread = list_entry(firstElement, struct thread, elem);
     struct thread *secondThread = list_entry(secondElement, struct thread, elem);
